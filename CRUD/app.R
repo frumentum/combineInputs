@@ -33,7 +33,7 @@ server <- function(input, output, session) {
   
   # if a row is selected, one will get the possibility to edit the town;
   # if no row is selected (or it's deselected), edit mode shall disappear
-  observeEvent(selection(), {
+  observeEvent(selection(), priority = 1, {
     output$editDB <- renderUI({
       if (is.data.frame(selection())) {
         # which town is selected? create character string
@@ -45,16 +45,16 @@ server <- function(input, output, session) {
         tagList(
           column(4,
             selectizeInput("town", "Town",
-                           choices = c(unique(rV$towns$town), "new town"),
+                           choices = unique(rV$towns$town),
                            select = selectedTown,
                            options = list(create = TRUE)),
             # actionButton shall appear if selectizeInput changes, no matter if
             # the town is already known or not
-            conditionalPanel(
-              condition = paste0("input.town != '", selectedTown, "' | ",
-                                 "input.population != '", selectedPop, "'"),
-              actionButton("entry", "save changes")
-            ),
+            # conditionalPanel(
+            #   condition = paste0("input.town != '", selectedTown, "' | ",
+            #                      "input.population != '", selectedPop, "'"),
+            #   actionButton("entry", "save changes")
+            # ),
             br(),
             hr()
           ),
@@ -71,14 +71,15 @@ server <- function(input, output, session) {
     })
   })
   
-  observeEvent(input$entry, {
+  observe(priority = 0, {
     newData <- data.frame(
       town = input$town,
       population = input$population,
       stringsAsFactors = FALSE
     )
-    print(str(newData))
-    rV$towns[input$table_rows_selected, c("town", "population")] <- newData
+    isolate(
+      rV$towns[input$table_rows_selected, c("town", "population")] <- newData
+    )
       
   })
 }
